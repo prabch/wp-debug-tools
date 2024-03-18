@@ -1,9 +1,11 @@
 <?php
+// Define constants for easier configuration and paths.
 define("MU_PATH", "wp-content/mu-plugins");
 define("ER_URL", "https://raw.githubusercontent.com/mbissett/error-revealer/master/error-revealer.php");
 define("BACKUP_CONFIG_FILENAME", "wp-config.my-backup");
 define("LOGVIEW_FILEZIE_LIMIT_MB", 50);
 
+// Debugging settings to be ensured in wp-config.php
 $config_constants = [
     'WP_DEBUG' => 'true',
     'WP_DEBUG_LOG' => 'true',
@@ -11,120 +13,150 @@ $config_constants = [
     'SCRIPT_DEBUG' => 'false',
 ];
 
+// Path to the WordPress debug log file.
 $debug_log_file_path = __DIR__ . '/wp-content/debug.log';
+
+// Array of errors that can be highlighted in the log viewer.
 $highlightable_errors = ['exception', 'fatal', 'exhausted'];
 
+// Determine the home URL based on whether HTTPS is enabled.
 $home_url = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
+
+// Determine the current URL for redirection and form actions.
 $current_url = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+// Capture user input from the URL (GET parameters) for various views and actions.
 $current_view = isset($_GET['view']) ? $_GET['view'] : "";
 $highlight_errors = (isset($_GET["highlight-errors"]) && $_GET["highlight-errors"] == "true") ? true : false;
 $filter_errors = (isset($_GET["filter-errors"]) && $_GET["filter-errors"] == "true") ? true : false;
 $bypass_fs_limit = (isset($_GET["bypass-file-limit"]) && $_GET["bypass-file-limit"] == "true") ? true : false;
 $error = (isset($_GET["error"])) ? $_GET["error"] : "unknown error";
+
+// Flag to track if debugging is enabled based on the wp-config.php settings.
 $debug_enabled = true;
+
+// Use the current time as a unique identifier for certain operations.
 $random = time();
 
+<?php
+
+// Check if the current view is the debug log viewer.
 if($current_view == "debug-log-viewer") {
-	$wp_config = new WPConfigTransformer( 'wp-config.php' );
+    // Initialize the WPConfigTransformer class to manage wp-config.php.
+    $wp_config = new WPConfigTransformer('wp-config.php');
 
-	foreach ($config_constants as $key => $value) {
-		if($wp_config->get_value( 'constant', $key) != "'$value'")$debug_enabled = false;
-	}
+    // Verify if debugging constants are set as expected; disable debugging if not.
+    foreach ($config_constants as $key => $value) {
+        if($wp_config->get_value('constant', $key) != "'$value'") $debug_enabled = false;
+    }
 
-	if (!$debug_enabled && isset($_GET["enable-debugging"]) && $_GET["enable-debugging"] == "true") {
-		//install error revealer
-		if (isset($_GET["enable-er"]) && $_GET["enable-er"] == "true") {
-			$file_name = basename(ER_URL);
-			if (file_exists($file_name) || file_exists(MU_PATH . '/' . $file_name)) {
-				$location = $home_url . '?view=error&error=error revealer is already installed';
-				header("Location: $location");
-				die();
-			}
+    // Enable debugging if requested and currently not enabled.
+    if (!$debug_enabled && isset($_GET["enable-debugging"]) && $_GET["enable-debugging"] == "true") {
+        // Conditionally install the error revealer plugin if requested.
+        if (isset($_GET["enable-er"]) && $_GET["enable-er"] == "true") {
+            $file_name = basename(ER_URL);
+            // Prevent reinstallation if the error revealer is already present.
+            if (file_exists($file_name) || file_exists(MU_PATH . '/' . $file_name)) {
+                $location = $home_url . '?view=error&error=error revealer is already installed';
+                header("Location: $location");
+                die();
+            }
 
-			if (!file_put_contents($file_name . $random, file_get_contents(ER_URL))) {
-				$location = $home_url . '?view=error&error=failed to download error revealer from source';
-				header("Location: $location");
-				die();
-			}
+            // Attempt to download the error revealer; fail gracefully on error.
+            if (!file_put_contents($file_name . $random, file_get_contents(ER_URL))) {
+                $location = $home_url . '?view=error&error=failed to download error revealer from source';
+                header("Location: $location");
+                die();
+            }
 
-			if (!file_exists(MU_PATH)) mkdir(MU_PATH, 0755, true);
-			rename($file_name . $random, MU_PATH . '/' . $file_name);
-			//unlink($file_name . $random);
-		}
+            // Ensure the MU plugins directory exists before moving the file there.
+            if (!file_exists(MU_PATH)) mkdir(MU_PATH, 0755, true);
+            rename($file_name . $random, MU_PATH . '/' . $file_name);
+        }
 
-		//enable debugging
-		if (!file_exists(BACKUP_CONFIG_FILENAME)) {
-			copy('wp-config.php', BACKUP_CONFIG_FILENAME);
-			foreach ($config_constants as $key => $value) {
-				$wp_config->update( 'constant', $key, $value);
-			}
-		} else {
-			$location = $home_url . '?view=error&error=wp-config.php backup file already exists';
-			header("Location: $location");
-			die();
-		}
+        // Backup wp-config.php before enabling debugging.
+        if (!file_exists(BACKUP_CONFIG_FILENAME)) {
+            copy('wp-config.php', BACKUP_CONFIG_FILENAME);
+            foreach ($config_constants as $key => $value) {
+                $wp_config->update('constant', $key, $value);
+            }
+        } else {
+            // Abort if a backup already exists to prevent data loss.
+            $location = $home_url . '?view=error&error=wp-config.php backup file already exists';
+            header("Location: $location");
+            die();
+        }
 
-		$debug_enabled = true;
-	}
+        // Confirm debugging is now enabled.
+        $debug_enabled = true;
+    }
 
-	if ($debug_enabled && isset($_GET["disable-debugging"]) && $_GET["disable-debugging"] == "true") {
-		//delete error revealer
-		if (file_exists(MU_PATH . '/error-revealer.php')) {
-			unlink(MU_PATH . '/error-revealer.php');
-		}
+    // Disable debugging if requested and currently enabled.
+    if ($debug_enabled && isset($_GET["disable-debugging"]) && $_GET["disable-debugging"] == "true") {
+        // Optionally delete the error revealer as part of cleanup.
+        if (file_exists(MU_PATH . '/error-revealer.php')) {
+            unlink(MU_PATH . '/error-revealer.php');
+        }
 
-		//@todo: store the er filename and if mu-plugins folder was there in the update wp-config and refer to it over here
+        // Restore the original wp-config.php from backup.
+        if (file_exists(BACKUP_CONFIG_FILENAME)) {
+            copy(BACKUP_CONFIG_FILENAME, BACKUP_CONFIG_FILENAME . $random);
+            unlink('wp-config.php');
+            rename(BACKUP_CONFIG_FILENAME, 'wp-config.php');
+            unlink(BACKUP_CONFIG_FILENAME . $random);
+        } else {
+            // Error handling if backup does not exist.
+            $location = $home_url . '?view=error&error=wp-config.php backup file does not exist';
+            header("Location: $location");
+            die();
+        }
 
-		//disable debugging
-		if (file_exists(BACKUP_CONFIG_FILENAME)) {
-			copy(BACKUP_CONFIG_FILENAME, BACKUP_CONFIG_FILENAME . $random);
-			unlink('wp-config.php');
-			rename(BACKUP_CONFIG_FILENAME, 'wp-config.php');
-			unlink(BACKUP_CONFIG_FILENAME . $random);
-		} else {
-			$location = $home_url . '?view=error&error=wp-config.php backup file does not exist';
-			header("Location: $location");
-			die();
-		}
+        // Mark debugging as disabled.
+        $debug_enabled = false;
+    }
 
-		$debug_enabled = false;
-	}
+    // Download the debug log file if requested.
+    if ($debug_enabled && isset($_GET["download-log-file"]) && $_GET["download-log-file"] == "true") {
+        if (file_exists($debug_log_file_path)) {
+            // Serve the debug log file for download.
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . basename($debug_log_file_path) . '"');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($debug_log_file_path));
+            flush();
+            readfile($debug_log_file_path);
+            exit;
+        } else {
+            echo "Debug log file does not exist.";
+        }
+    }
 
-	if ($debug_enabled && isset($_GET["download-log-file"]) && $_GET["download-log-file"] == "true") {
-		if (file_exists($debug_log_file_path)) {
-			header('Content-Description: File Transfer');
-			header('Content-Type: application/octet-stream');
-			header('Content-Disposition: attachment; filename="' . basename($debug_log_file_path) . '"');
-			header('Expires: 0');
-			header('Cache-Control: must-revalidate');
-			header('Pragma: public');
-			header('Content-Length: ' . filesize($debug_log_file_path));
-			flush();
-			readfile($debug_log_file_path);
-			exit;
-		} else {
-			echo "Debug log file does not exist.";
-		}
-	}
+    // Rotate the debug log file if requested.
+    if ($debug_enabled && isset($_GET["rotate-log-file"]) && $_GET["rotate-log-file"] == "true") {
+        if (file_exists($debug_log_file_path)) {
+            // Generate a new name for the log file and rename it.
+            $path_info = pathinfo($debug_log_file_path);
+            $new_name = $path_info['dirname'] . DIRECTORY_SEPARATOR . $path_info['filename'] . '-' . $random . '.' . $path_info['extension'];
+            rename($debug_log_file_path, $new_name);
+        }
+    }
 
-	if ($debug_enabled && isset($_GET["rotate-log-file"]) && $_GET["rotate-log-file"] == "true") {
-		if (file_exists($debug_log_file_path)) {
-			$path_info = pathinfo($debug_log_file_path);
-			$new_name = $path_info['dirname'] . DIRECTORY_SEPARATOR . $path_info['filename'] . '-' . $random . '.' . $path_info['extension'];
-			rename($debug_log_file_path, $new_name);
-		}
-	}
-
-	if ($debug_enabled && isset($_GET["delete-log-file"]) && $_GET["delete-log-file"] == "true") {
-		if (file_exists($debug_log_file_path)) {
-			unlink($debug_log_file_path);
-		}
-	}
-} else if($current_view == "delete-tool") {
-	unlink(__FILE__);
-	$location = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
-	header("Location: $location");
-	die();
+    // Delete the debug log file if requested.
+    if ($debug_enabled && isset($_GET["delete-log-file"]) && $_GET["delete-log-file"] == "true") {
+        if (file_exists($debug_log_file_path)) {
+            // Remove the log file from the server.
+            unlink($debug_log_file_path);
+        }
+    }
+} else if ($current_view == "delete-tool") {
+    // Delete this tool itself when requested, for security reasons.
+    unlink(__FILE__);
+    $location = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+    header("Location: $location");
+    die();
 }
 ?>
 
@@ -204,7 +236,7 @@ if($current_view == "debug-log-viewer") {
         .landing-container input,
         .landing-container label,
         .landing-container button {
-            font-family: 'Arial', sans-serif; /* Arial is a clean and widely available font */
+            font-family: 'Arial', sans-serif;
         }
 
         .landing-container form,
@@ -217,14 +249,14 @@ if($current_view == "debug-log-viewer") {
 
         .header {
             font-size: 24px;
-            font-family: 'Verdana', sans-serif; /* Use Verdana, a web-safe font */
+            font-family: 'Verdana', sans-serif; 
         }
 
         /* Styles for text inputs and checkboxes */
         input[type="text"], .checkbox-container {
             width: 100%;
             margin-top: 5px;
-            margin-bottom: 20px; /* Increase space between inputs */
+            margin-bottom: 20px;
         }
 
         input[type="text"] {
@@ -273,8 +305,8 @@ if($current_view == "debug-log-viewer") {
         /* Responsive styles */
         @media (max-width: 600px) {
             .ribbon-bar form {
-                width: 100%; /* Full width on small screens */
-                margin: 5px 0; /* Stack buttons vertically */
+                width: 100%;
+                margin: 5px 0;
             }
         }
     </style>
