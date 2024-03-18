@@ -1,6 +1,6 @@
-# WordPress Debugging Tool
+# WordPress Debugging Tools
 
-This WordPress debugging tool is designed to help developers and site administrators easily enable debugging, view error logs, manage log files, and more within their WordPress environment. It provides a convenient interface for modifying `wp-config.php` constants related to debugging, viewing error logs directly from the browser, and performing other debugging-related tasks without the need for manual file modifications.
+This WordPress debugging tools is designed to help developers and site administrators easily enable debugging, view error logs, manage log files, and more within their WordPress environment. It provides a convenient interface for modifying `wp-config.php` constants related to debugging, viewing error logs directly from the browser, and performing other debugging-related tasks without the need for manual file modifications.
 
 ## Features
 
@@ -15,13 +15,13 @@ This WordPress debugging tool is designed to help developers and site administra
 
 1. Download the "wdt.php" file from the GitHub repository.
 2. Place it in your WordPress site's root directory.
-3. Access the tool by navigating to `http://yourwordpresssite.com/wdt.php` in your web browser.
+3. Access the tools by navigating to `http://yourwordpresssite.com/wdt.php` in your web browser.
 
 ## Usage
 
 ### Enabling Debugging
 
-1. Open the debugging tool in your browser.
+1. Open the debugging tools in your browser.
 2. Click on the "Enable Debugging" button to modify the `wp-config.php` file and enable WordPress debugging features.
 
 ### Viewing and Managing Logs
@@ -43,7 +43,7 @@ This WordPress debugging tool is designed to help developers and site administra
 
 ## Configuration
 
-You can modify the following constants in the `wordpress-debugging-tool.php` file to customize the behavior of the debugging tool:
+You can modify the following constants in the `wdt.php` file to customize the behavior of the debugging tools:
 
 - `MU_PATH`: Path to the Must-Use plugins directory.
 - `ER_URL`: URL to the error revealer script.
@@ -65,4 +65,4 @@ Contributions are welcome! Please feel free to submit pull requests or create is
 
 ## License
 
-This WordPress debugging tool is open-source software licensed under the GNU General Public License.
+WordPress debugging tools is open-source software licensed under the GNU General Public License.
