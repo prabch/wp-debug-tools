@@ -2,6 +2,11 @@
 
 WordPress debugging tools is designed to help developers and site administrators easily enable debugging, view error logs, manage log files, and more within their WordPress environment. It provides a convenient interface for modifying `wp-config.php` constants related to debugging, viewing error logs directly from the browser, and performing other debugging-related tasks without the need for manual file modifications.
 
+![image](https://github.com/prabch/wp-debug-tools/assets/25548840/a9f11ac8-6c80-4f46-9ddf-fc28c197a23e)
+![image](https://github.com/prabch/wp-debug-tools/assets/25548840/5af3e394-2bbe-4af3-bfec-ea4567acb985)
+![image](https://github.com/prabch/wp-debug-tools/assets/25548840/ecdc216a-f4fa-4a7b-b9f4-b6db284e9e8c)
+![image](https://github.com/prabch/wp-debug-tools/assets/25548840/080e6b0d-c341-499a-87d0-5e837aac0fc0)
+
 ## Features
 
 - **Easy Debugging Toggle**: Quickly enable or disable WordPress debugging settings with a single click.
