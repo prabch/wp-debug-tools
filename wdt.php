@@ -38,8 +38,6 @@ $debug_enabled = true;
 // Use the current time as a unique identifier for certain operations.
 $random = time();
 
-<?php
-
 // Check if the current view is the debug log viewer.
 if($current_view == "debug-log-viewer") {
     // Initialize the WPConfigTransformer class to manage wp-config.php.
